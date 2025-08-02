@@ -1,29 +1,33 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Serverless Job Matcher App using AWS SAM
-Globals:
-  Function:
-    Timeout: 10
-    Runtime: python3.12
-    Architectures:
-    - x86_64
 Resources:
   JobMatcherApi:
     Type: AWS::Serverless::Api
     Properties:
       Name: JobMatcherApi
       StageName: Prod
-      Cors:
-        AllowMethods: '''GET,POST'''
-        AllowHeaders: '''Content-Type'''
-        AllowOrigin: '''*'''
+      Cors: '''*'''
+  JobDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: ${AWS::StackName}-posted-jobs
   PostJobFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: post_job.lambda_handler
+      Runtime: python3.12
       CodeUri: PostJobFunction
+      Timeout: 10
+      Environment:
+        Variables:
+          JOB_BUCKET:
+            Ref: JobDataBucket
       Policies:
-      - AmazonDynamoDBFullAccess
+      - S3CrudPolicy:
+          BucketName:
+            Ref: JobDataBucket
       Events:
         PostJobApi:
           Type: Api
@@ -38,9 +42,17 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: list_jobs.lambda_handler
+      Runtime: python3.12
       CodeUri: ListJobsFunction
+      Timeout: 10
+      Environment:
+        Variables:
+          JOB_BUCKET:
+            Ref: JobDataBucket
       Policies:
-      - AmazonDynamoDBReadOnlyAccess
+      - S3ReadPolicy:
+          BucketName:
+            Ref: JobDataBucket
       Events:
         ListJobsApi:
           Type: Api

@@ -2,21 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Serverless Job Matcher App using AWS SAM
 
-Globals:
-  Function:
-    Timeout: 10
-    Runtime: python3.12
-    Architectures:
-      - x86_64
-    Environment:
-      Variables:
-        JOB_BUCKET: !Ref JobDataBucket
-    LoggingConfig:
-      LogFormat: JSON
-      ApplicationLogLevel: INFO
-      SystemLogLevel: INFO
-      LogGroup: !Sub "/aws/lambda/${AWS::StackName}"
-
 Resources:
 
   JobMatcherApi:
@@ -24,13 +9,7 @@ Resources:
     Properties:
       Name: JobMatcherApi
       StageName: Prod
-      Cors:
-        AllowMethods: 
-          - GET
-          - POST
-        AllowHeaders: 
-          - Content-Type
-        AllowOrigin: "*"
+      Cors: "'*'"  # simple string to allow all origins
 
   JobDataBucket:
     Type: AWS::S3::Bucket
@@ -41,7 +20,12 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: post_job.lambda_handler
+      Runtime: python3.12
       CodeUri: backend/
+      Timeout: 10
+      Environment:
+        Variables:
+          JOB_BUCKET: !Ref JobDataBucket
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref JobDataBucket
@@ -57,7 +41,12 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: list_jobs.lambda_handler
+      Runtime: python3.12
       CodeUri: backend/
+      Timeout: 10
+      Environment:
+        Variables:
+          JOB_BUCKET: !Ref JobDataBucket
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref JobDataBucket

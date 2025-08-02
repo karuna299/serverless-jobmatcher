@@ -11,6 +11,11 @@ Resources:
         AllowMethods: '''OPTIONS,POST'''
         AllowHeaders: '''Content-Type'''
         AllowOrigin: '''*'''
+  JobDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: ${AWS::StackName}-job-data
   PostJobFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -18,6 +23,10 @@ Resources:
       CodeUri: PostJobFunction
       Handler: post_job.lambda_handler
       Runtime: python3.12
+      Environment:
+        Variables:
+          JOB_DATA_BUCKET:
+            Ref: JobDataBucket
       Events:
         PostJobApi:
           Type: Api
@@ -26,10 +35,47 @@ Resources:
             Method: post
             RestApiId:
               Ref: JobApi
+      Policies:
+      - Statement:
+        - Effect: Allow
+          Action:
+          - s3:PutObject
+          Resource:
+          - Fn::Sub: arn:aws:s3:::${JobDataBucket}/*
     Metadata:
       SamResourceId: PostJobFunction
+  ListJobsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: list-jobs
+      Handler: list_jobs.lambda_handler
+      Runtime: python3.12
+      CodeUri: ListJobsFunction
+      Environment:
+        Variables:
+          JOB_DATA_BUCKET:
+            Ref: JobDataBucket
+      Events:
+        GetJobsApi:
+          Type: Api
+          Properties:
+            Path: /list-jobs
+            Method: GET
+            RestApiId:
+              Ref: JobApi
+      Policies:
+      - Statement:
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:ListBucket
+          Resource:
+          - arn:aws:s3:::jonmatcher-job-data
+          - arn:aws:s3:::jonmatcher-job-data/*
+    Metadata:
+      SamResourceId: ListJobsFunction
 Outputs:
   JobPostAPI:
     Description: API Gateway endpoint for posting jobs
     Value:
-      Fn::Sub: https://${JobApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/post-job
+      Fn::Sub: https://${JobApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/list-jobs

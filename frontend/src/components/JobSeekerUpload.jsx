@@ -1,65 +1,48 @@
-import React, { useState } from 'react';
 
-export default function JobSeekerUpload() {
-  const [resumeFile, setResumeFile] = useState(null);
-  const [matches, setMatches] = useState([]);
-  const [status, setStatus] = useState(null);
+import { useState, useEffect } from 'react';
+import JobList from './JobList';
+import { useNavigate } from 'react-router-dom';
 
-  const handleUpload = async (e) => {
+function JobSeekerUpload() {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const navigate = useNavigate();
+
+  const handleFileChange = (e) => {
+    setSelectedFile(e.target.files[0]);
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!resumeFile) {
-      setStatus('Please upload your resume.');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('resume', resumeFile);
-
-    setStatus('Uploading and matching...');
-
-    try {
-      const res = await fetch(import.meta.env.VITE_API_BASE_URL + '/match-resume', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error('Server error');
-      const data = await res.json();
-
-      setMatches(data.matches || []);
-      setStatus('Matching complete.');
-    } catch (err) {
-      setStatus('Failed to upload or match.');
-    }
+    navigate('/feature');
   };
 
   return (
-    <div className="bg-white p-4 rounded shadow">
-      <h2 className="text-lg font-semibold mb-2">Upload Resume</h2>
-      <form onSubmit={handleUpload} className="space-y-3">
+    <div className="space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white shadow p-6 rounded space-y-4"
+      >
+        <h2 className="text-xl font-semibold">Upload Your Resume</h2>
         <input
           type="file"
-          accept=".pdf,.doc,.docx,.txt"
-          onChange={(e) => setResumeFile(e.target.files[0])}
-          className="w-full"
-          required
+          accept=".pdf,.doc,.docx"
+          onChange={handleFileChange}
+          className="block w-full border p-2"
         />
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
           Upload
         </button>
-        {status && <p className="text-sm text-gray-700">{status}</p>}
       </form>
 
-      {matches.length > 0 && (
-        <div className="mt-4">
-          <h3 className="font-semibold">Matched Jobs:</h3>
-          <ul className="list-disc ml-6">
-            {matches.map((job, i) => (
-              <li key={i}>{job.title} — {job.location}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div>
+        <h2 className="text-xl font-semibold mb-2">Available Jobs</h2>
+        <JobList />
+      </div>
     </div>
   );
 }
+
+export default JobSeekerUpload;

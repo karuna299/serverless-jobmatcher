@@ -1,3 +1,4 @@
+
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Serverless Job Matcher – Recruiter Job Posting
@@ -13,6 +14,11 @@ Resources:
         AllowHeaders: "'Content-Type'"
         AllowOrigin: "'*'"
 
+  JobDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-job-data"
+
   PostJobFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -20,6 +26,9 @@ Resources:
       CodeUri: backend/
       Handler: post_job.lambda_handler
       Runtime: python3.12
+      Environment:
+        Variables:
+          JOB_DATA_BUCKET: !Ref JobDataBucket
       Events:
         PostJobApi:
           Type: Api
@@ -27,9 +36,48 @@ Resources:
             Path: /post-job
             Method: post
             RestApiId: !Ref JobApi
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource:
+                - !Sub "arn:aws:s3:::${JobDataBucket}/*"
+
+
+  ListJobsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: list-jobs
+      Handler: list_jobs.lambda_handler
+      Runtime: python3.12
+      CodeUri: backend/
+      Environment:
+        Variables:
+          JOB_DATA_BUCKET: !Ref JobDataBucket   # ✅ Use the correct env var key
+      Events:
+        GetJobsApi:
+          Type: Api
+          Properties:
+            Path: /list-jobs
+            Method: GET
+            RestApiId: !Ref JobApi               # ✅ Add RestApiId here
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:ListBucket
+              Resource:
+                - arn:aws:s3:::jonmatcher-job-data
+                - arn:aws:s3:::jonmatcher-job-data/*
+
 
 Outputs:
   JobPostAPI:
     Description: "API Gateway endpoint for posting jobs"
     Value: !Sub "https://${JobApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/post-job"
 
+  JobPostAPI:
+    Description: "API Gateway endpoint for posting jobs"
+    Value: !Sub "https://${JobApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/list-jobs"

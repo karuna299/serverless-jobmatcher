@@ -1,11 +1,9 @@
-# backend/list_jobs.py
-
 import boto3
 import json
 import os
 
 s3 = boto3.client("s3")
-BUCKET = os.environ["hireflow-job-data"]
+BUCKET = os.environ["JOB_BUCKET"]
 
 def lambda_handler(event, context):
     try:

@@ -1,81 +1,62 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: "Serverless Job Matcher \u2013 Recruiter Job Posting"
+Description: Serverless Job Matcher App using AWS SAM
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: python3.12
+    Architectures:
+    - x86_64
 Resources:
-  JobApi:
+  JobMatcherApi:
     Type: AWS::Serverless::Api
     Properties:
-      Name: JobApi
+      Name: JobMatcherApi
       StageName: Prod
       Cors:
-        AllowMethods: '''OPTIONS,POST'''
+        AllowMethods: '''GET,POST'''
         AllowHeaders: '''Content-Type'''
         AllowOrigin: '''*'''
-  JobDataBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName:
-        Fn::Sub: ${AWS::StackName}-job-data
   PostJobFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: post-job
-      CodeUri: PostJobFunction
       Handler: post_job.lambda_handler
-      Runtime: python3.12
-      Environment:
-        Variables:
-          JOB_DATA_BUCKET:
-            Ref: JobDataBucket
+      CodeUri: PostJobFunction
+      Policies:
+      - AmazonDynamoDBFullAccess
       Events:
         PostJobApi:
           Type: Api
           Properties:
             Path: /post-job
-            Method: post
+            Method: POST
             RestApiId:
-              Ref: JobApi
-      Policies:
-      - Statement:
-        - Effect: Allow
-          Action:
-          - s3:PutObject
-          Resource:
-          - Fn::Sub: arn:aws:s3:::${JobDataBucket}/*
+              Ref: JobMatcherApi
     Metadata:
       SamResourceId: PostJobFunction
   ListJobsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: list-jobs
       Handler: list_jobs.lambda_handler
-      Runtime: python3.12
       CodeUri: ListJobsFunction
-      Environment:
-        Variables:
-          JOB_DATA_BUCKET:
-            Ref: JobDataBucket
+      Policies:
+      - AmazonDynamoDBReadOnlyAccess
       Events:
-        GetJobsApi:
+        ListJobsApi:
           Type: Api
           Properties:
             Path: /list-jobs
             Method: GET
             RestApiId:
-              Ref: JobApi
-      Policies:
-      - Statement:
-        - Effect: Allow
-          Action:
-          - s3:GetObject
-          - s3:ListBucket
-          Resource:
-          - arn:aws:s3:::jonmatcher-job-data
-          - arn:aws:s3:::jonmatcher-job-data/*
+              Ref: JobMatcherApi
     Metadata:
       SamResourceId: ListJobsFunction
 Outputs:
-  JobPostAPI:
-    Description: API Gateway endpoint for posting jobs
+  PostJobApi:
+    Description: POST endpoint for posting job listings
     Value:
-      Fn::Sub: https://${JobApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/list-jobs
+      Fn::Sub: https://${JobMatcherApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/post-job
+  ListJobsApi:
+    Description: GET endpoint for listing job listings
+    Value:
+      Fn::Sub: https://${JobMatcherApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/list-jobs

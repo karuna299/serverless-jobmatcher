@@ -1,10 +1,11 @@
+
 import json
 import boto3
 import time
 import os
 
 s3 = boto3.client('s3')
-bucket_name = os.environ['hireflow-job-data']
+bucket_name = os.environ['JOB_BUCKET']
 
 def lambda_handler(event, context):
     try:

@@ -2,24 +2,34 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: "Serverless Job Matcher \u2013 Recruiter Job Posting"
 Resources:
+  JobApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: JobApi
+      StageName: Prod
+      Cors:
+        AllowMethods: '''OPTIONS,POST'''
+        AllowHeaders: '''Content-Type'''
+        AllowOrigin: '''*'''
   PostJobFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: post_job
-      Runtime: python3.12
+      FunctionName: post-job
       CodeUri: PostJobFunction
       Handler: post_job.lambda_handler
-      Timeout: 10
+      Runtime: python3.12
       Events:
-        JobPostAPI:
+        PostJobApi:
           Type: Api
           Properties:
-            Path: /jobs
+            Path: /post-job
             Method: post
+            RestApiId:
+              Ref: JobApi
     Metadata:
       SamResourceId: PostJobFunction
 Outputs:
   JobPostAPI:
     Description: API Gateway endpoint for posting jobs
     Value:
-      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/jobs
+      Fn::Sub: https://${JobApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/post-job

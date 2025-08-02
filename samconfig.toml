@@ -1,9 +1,9 @@
 version = 0.1
 
 [default.deploy.parameters]
-stack_name = "jobmatcher"
+stack_name = "jonmatcher"
 resolve_s3 = true
-s3_prefix = "jobmatcher"
+s3_prefix = "jonmatcher"
 region = "ap-south-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
